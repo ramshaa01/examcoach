@@ -1,8 +1,18 @@
 import streamlit as st
-import requests
+import sys
 import os
 
-API_URL = os.environ.get("API_URL", "http://localhost:8000")
+# Add project root to path so agents/rag/prompts modules are importable
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
+from agents.orchestrator import Orchestrator
+from agents.tracker import load_profile
+
+# Initialize orchestrator once per session
+if "orchestrator" not in st.session_state:
+    st.session_state.orchestrator = Orchestrator()
+
+orchestrator = st.session_state.orchestrator
 
 st.set_page_config(page_title="ExamCoach AI", page_icon="🎓", layout="wide")
 
@@ -16,17 +26,13 @@ with st.sidebar:
     
     st.divider()
     st.subheader("Weak Topics Tracker")
-    try:
-        profile_res = requests.get(f"{API_URL}/profile")
-        if profile_res.status_code == 200:
-            weaknesses = profile_res.json().get("weaknesses", [])
-            if weaknesses:
-                for w in weaknesses:
-                    st.warning(w)
-            else:
-                st.success("No weak topics identified yet! Keep practicing.")
-    except Exception:
-        st.error("Failed to fetch profile (API might be down).")
+    profile = load_profile()
+    weaknesses = profile.get("weaknesses", [])
+    if weaknesses:
+        for w in weaknesses:
+            st.warning(w)
+    else:
+        st.success("No weak topics identified yet! Keep practicing.")
 
 # Session State for Question
 if 'current_question' not in st.session_state:
@@ -40,11 +46,10 @@ with col1:
     if st.button("Generate Practice Question", type="primary"):
         with st.spinner(f"Generating a {subject} question tailored for you..."):
             try:
-                res = requests.post(f"{API_URL}/generate_question", json={"subject": subject})
-                if res.status_code == 200:
-                    st.session_state.current_question = res.json().get("question")
+                question = orchestrator.run_practice_flow(subject)
+                st.session_state.current_question = question
             except Exception as e:
-                st.error("Error connecting to to API.")
+                st.error(f"Error generating question: {e}")
 
     if st.session_state.current_question:
         st.info("### Question\n" + st.session_state.current_question)
@@ -56,19 +61,17 @@ with col1:
             if submitted and student_answer:
                 with st.spinner("Evaluating your answer..."):
                     try:
-                        eval_res = requests.post(f"{API_URL}/evaluate", json={
-                            "question": st.session_state.current_question,
-                            "student_answer": student_answer,
-                            "subject": subject
-                        })
-                        if eval_res.status_code == 200:
-                            data = eval_res.json()
-                            st.success("Evaluation Complete!")
-                            st.markdown("### Feedback")
-                            st.markdown(data.get("feedback"))
-                            st.session_state.current_question = None # Reset after answering
+                        feedback, new_weaknesses = orchestrator.run_evaluation_flow(
+                            st.session_state.current_question,
+                            student_answer,
+                            subject
+                        )
+                        st.success("Evaluation Complete!")
+                        st.markdown("### Feedback")
+                        st.markdown(feedback)
+                        st.session_state.current_question = None  # Reset after answering
                     except Exception as e:
-                        st.error("Error contacting Evaluation Agent.")
+                        st.error(f"Error during evaluation: {e}")
 
 with col2:
     st.header("Instructions")
