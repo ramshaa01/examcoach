@@ -3,7 +3,7 @@ import google.generativeai as genai
 from prompts.agent_prompts import KNOWLEDGE_AGENT_PROMPT
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "DUMMY_KEY"))
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 def summarize_context(chunks: list) -> str:
     """Synthesizes the retrieved RAG chunks."""

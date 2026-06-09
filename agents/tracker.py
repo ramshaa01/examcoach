@@ -6,7 +6,7 @@ from prompts.agent_prompts import TRACKER_PROMPT
 PROFILE_FILE = "student_profile.json"
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "DUMMY_KEY"))
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 def load_profile():
     if os.path.exists(PROFILE_FILE):

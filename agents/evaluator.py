@@ -6,7 +6,7 @@ import google.generativeai as genai
 from prompts.agent_prompts import EVALUATOR_PROMPT
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "DUMMY_KEY"))
-model = genai.GenerativeModel('gemini-1.5-pro') # Using pro for better evaluation
+model = genai.GenerativeModel('gemini-2.5-pro') # Using pro for better evaluation
 
 def evaluate_answer(question: str, student_answer: str, context: str = "") -> str:
     """Evaluates the student's answer."""

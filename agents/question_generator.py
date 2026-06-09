@@ -5,7 +5,7 @@ from prompts.agent_prompts import QUESTION_GENERATOR_PROMPT
 # Configure API key (Assuming it's set in the environment or passed)
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "DUMMY_KEY"))
 
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-2.5-flash')
 
 def generate_question(subject: str, weaknesses: list = None, context: str = "") -> str:
     """Generates a question using Gemini."""

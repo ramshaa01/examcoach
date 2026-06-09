@@ -271,7 +271,7 @@ with col1:
                             import google.generativeai as genai
                             genai.configure(api_key=st.session_state.api_key)
                             
-                            tutor_model = genai.GenerativeModel('gemini-1.5-flash')
+                            tutor_model = genai.GenerativeModel('gemini-2.5-flash')
                             chat_prompt = f"""
                             You are a friendly personal tutor assisting a student.
                             Context of the question:
