@@ -21,4 +21,6 @@ def evaluate_answer(question: str, student_answer: str, context: str = "") -> st
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return f"Error evaluating answer: {str(e)}"
+        key = os.environ.get("GEMINI_API_KEY", "")
+        masked_key = f"{key[:5]}...{key[-5:]}" if len(key) > 10 else "EMPTY/SHORT"
+        return f"Error evaluating answer using key {masked_key}: {str(e)}"

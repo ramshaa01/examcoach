@@ -19,4 +19,6 @@ def generate_question(subject: str, weaknesses: list = None, context: str = "") 
         response = model.generate_content(prompt)
         return response.text
     except Exception as e:
-        return f"Error generating question: {str(e)}"
+        key = os.environ.get("GEMINI_API_KEY", "")
+        masked_key = f"{key[:5]}...{key[-5:]}" if len(key) > 10 else "EMPTY/SHORT"
+        return f"Error generating question using key {masked_key}: {str(e)}"
