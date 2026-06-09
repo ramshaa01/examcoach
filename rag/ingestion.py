@@ -27,7 +27,7 @@ def ingest_documents():
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
     docs = text_splitter.split_documents(documents)
 
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     
     vectorstore = FAISS.from_documents(docs, embeddings)
     vectorstore.save_local(DB_DIR)

@@ -10,7 +10,7 @@ def retrieve_context(query: str, k: int = 3) -> list:
         # Return empty if DB is not initialized to allow fallback
         return []
         
-    embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+    embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
     try:
         vectorstore = FAISS.load_local(DB_DIR, embeddings, allow_dangerous_deserialization=True)
         docs = vectorstore.similarity_search(query, k=k)
