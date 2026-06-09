@@ -47,7 +47,13 @@ st.markdown("""
 
 # Initialize Session States
 if "api_key" not in st.session_state:
-    st.session_state.api_key = os.environ.get("GEMINI_API_KEY", "")
+    api_key_val = os.environ.get("GEMINI_API_KEY", "")
+    try:
+        if not api_key_val and "GEMINI_API_KEY" in st.secrets:
+            api_key_val = st.secrets["GEMINI_API_KEY"]
+    except Exception:
+        pass
+    st.session_state.api_key = api_key_val
 
 # Apply API key configuration if available
 if st.session_state.api_key:
@@ -95,7 +101,9 @@ with st.sidebar:
             os.environ["GEMINI_API_KEY"] = cleaned_key
             st.rerun()
 
-    if not st.session_state.api_key:
+    if st.session_state.api_key:
+        st.success("🔑 API Key configured successfully!")
+    else:
         st.warning("⚠️ Please provide a Gemini API Key to enable the learning coach.")
     
     st.divider()
