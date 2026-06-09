@@ -86,12 +86,14 @@ st.caption("A multi-agent, RAG-grounded study preparation companion for UPSC, JE
 with st.sidebar:
     st.header("⚙️ Configuration")
     
-    # API Key management
     key_input = st.text_input("Gemini API Key", type="password", value=st.session_state.api_key, 
                               help="Enter your Google Gemini API key to power the agents.")
-    if key_input != st.session_state.api_key:
-        st.session_state.api_key = key_input
-        st.rerun()
+    if key_input:
+        cleaned_key = key_input.strip()
+        if cleaned_key != st.session_state.api_key:
+            st.session_state.api_key = cleaned_key
+            os.environ["GEMINI_API_KEY"] = cleaned_key
+            st.rerun()
 
     if not st.session_state.api_key:
         st.warning("⚠️ Please provide a Gemini API Key to enable the learning coach.")
