@@ -5,9 +5,6 @@ from prompts.agent_prompts import TRACKER_PROMPT
 
 PROFILE_FILE = "student_profile.json"
 
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "DUMMY_KEY"))
-model = genai.GenerativeModel('gemini-2.5-flash')
-
 def load_profile():
     if os.path.exists(PROFILE_FILE):
         with open(PROFILE_FILE, "r") as f:
@@ -20,6 +17,10 @@ def save_profile(profile):
 
 def update_weaknesses(evaluator_feedback: str):
     """Extract weak concepts using LLM and update file."""
+    # Configure and instantiate dynamically to pick up session API key
+    genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "DUMMY_KEY"))
+    model = genai.GenerativeModel('gemini-2.5-flash')
+    
     prompt = TRACKER_PROMPT.format(evaluator_feedback=evaluator_feedback)
     try:
         response = model.generate_content(prompt)
