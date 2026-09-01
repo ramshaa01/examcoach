@@ -1,3 +1,9 @@
+import os
+import sys
+
+# Ensure project root is in sys.path for serverless environments (e.g. Vercel)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+
 from fastapi import FastAPI
 from api.models import QuestionRequest, QuestionResponse, EvaluationRequest, EvaluationResponse, ProfileResponse
 from agents.orchestrator import exam_orchestrator
