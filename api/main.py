@@ -5,6 +5,15 @@ from agents.tracker import get_user_weaknesses
 
 app = FastAPI(title="ExamCoach API", description="AI Tutor for Indian Exams")
 
+@app.get("/")
+async def root():
+    return {
+        "status": "healthy",
+        "service": "ExamCoach Multi-Agent API",
+        "docs": "/docs",
+        "endpoints": ["/generate_question", "/evaluate", "/profile"]
+    }
+
 @app.post("/generate_question", response_model=QuestionResponse)
 async def generate_question_endpoint(req: QuestionRequest):
     question = exam_orchestrator.run_practice_flow(req.subject)
