@@ -9,6 +9,8 @@ from typing import List, Tuple
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
+from rag.bm25_utils import tokenize
+
 DB_DIR = "faiss_index"
 BM25_FILE = "faiss_index/bm25.pkl"
 CORPUS_FILE = "faiss_index/corpus.json"
@@ -52,18 +54,26 @@ def retrieve_sparse_bm25(query: str, k: int = 3) -> List[Tuple[str, str]]:
         if not texts:
             return []
 
-        tokenized_query = query.lower().split()
+        tokenized_query = tokenize(query)
+        if not tokenized_query:
+            return []
+
         scores = bm25.get_scores(tokenized_query)
-        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
+        ranked = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)
+        # Prefer chunks with a genuine positive BM25 score (keyword overlap), but
+        # BM25 scores can be legitimately negative for tiny corpora (e.g. a
+        # student's first one or two uploaded notes) — fall back to relative
+        # ranking rather than returning nothing in that case.
+        positive = [i for i in ranked if scores[i] > 0]
+        top_indices = (positive or ranked)[:k]
 
         results = []
         for idx in top_indices:
-            if scores[idx] > 0.05:
-                meta = metas[idx] if idx < len(metas) else {}
-                src = meta.get("source_file", "Notes")
-                page = meta.get("page", None)
-                citation = f"{src} (Page {page + 1})" if page is not None else src
-                results.append((texts[idx], citation))
+            meta = metas[idx] if idx < len(metas) else {}
+            src = meta.get("source_file", "Notes")
+            page = meta.get("page", None)
+            citation = f"{src} (Page {page + 1})" if page is not None else src
+            results.append((texts[idx], citation))
         return results
     except Exception as exc:
         print(f"BM25 retrieval note: {exc}")

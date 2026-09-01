@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import streamlit as st
 
 from agents.orchestrator import Orchestrator
-from agents.tracker import get_user_weaknesses, save_profile_json
+from agents.tracker import get_user_weaknesses
 from analytics.dashboard import (
     create_accuracy_trend_chart,
     create_error_distribution_chart,
@@ -482,54 +482,74 @@ def render_main_dashboard():
                 st.session_state.mock_start_time = time.time()
 
         if st.session_state.mock_exam and not st.session_state.mock_result:
-            exam = st.session_state.mock_exam
-            questions = exam.get("questions", [])
 
-            elapsed = int(time.time() - (st.session_state.mock_start_time or time.time()))
-            total_sec = exam.get("time_minutes", 10) * 60
-            remaining = max(0, total_sec - elapsed)
+            @st.fragment(run_every=1)
+            def _live_mock_test_fragment():
+                exam = st.session_state.mock_exam
+                questions = exam.get("questions", [])
 
-            st.markdown(f"""
-            <div style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);border-radius:10px;padding:12px 18px;margin:1rem 0;display:flex;justify-content:space-between;align-items:center;">
-                <div><b>Paper:</b> {exam.get('exam_pattern')} • {exam.get('subject')} ({len(questions)} Questions)</div>
-                <div style="font-size:1.2rem;font-weight:800;color:#38bdf8;">⏳ Time Remaining: {remaining // 60:02d}:{remaining % 60:02d}</div>
-            </div>
-            """, unsafe_allow_html=True)
+                elapsed = int(time.time() - (st.session_state.mock_start_time or time.time()))
+                total_sec = exam.get("time_minutes", 10) * 60
+                remaining = max(0, total_sec - elapsed)
 
-            with st.form("mock_test_submission_form"):
-                for idx, q in enumerate(questions):
-                    st.markdown(f"**Question {idx + 1}:**")
-                    st.markdown(q["text"])
+                timer_color = "#ef4444" if remaining <= 30 else "#38bdf8"
+                st.markdown(f"""
+                <div style="background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.4);border-radius:10px;padding:12px 18px;margin:1rem 0;display:flex;justify-content:space-between;align-items:center;">
+                    <div><b>Paper:</b> {exam.get('exam_pattern')} • {exam.get('subject')} ({len(questions)} Questions)</div>
+                    <div style="font-size:1.2rem;font-weight:800;color:{timer_color};">⏳ Time Remaining: {remaining // 60:02d}:{remaining % 60:02d}</div>
+                </div>
+                """, unsafe_allow_html=True)
 
-                    if mock_pattern in ["JEE Main", "NEET-UG"]:
-                        ans_choice = st.radio(
-                            f"Select Option for Q{idx + 1}:",
-                            ["UNATTEMPTED", "A", "B", "C", "D"],
-                            horizontal=True,
-                            key=f"mock_radio_{idx}",
-                        )
-                        st.session_state.mock_answers[idx] = ans_choice
-                    else:
-                        ans_text = st.text_area(f"Your Answer for Q{idx + 1}:", height=120, key=f"mock_txt_{idx}")
-                        st.session_state.mock_answers[idx] = ans_text
-
-                    st.divider()
-
-                submit_test = st.form_submit_button("🏁 Submit Mock Test for Grading", type="primary", use_container_width=True)
-
-                if submit_test:
-                    time_spent = int(time.time() - (st.session_state.mock_start_time or time.time()))
-                    with st.spinner("Grading complete test paper..."):
+                if remaining <= 0:
+                    with st.spinner("⏰ Time's up — auto-submitting your test..."):
                         res = orchestrator.run_mock_exam_evaluation(
                             user_id=st.session_state.user_id,
                             exam_pattern=exam.get("exam_pattern", "JEE Main"),
                             subject=exam.get("subject", "General"),
                             questions=questions,
                             student_answers=st.session_state.mock_answers,
-                            time_taken_seconds=time_spent,
+                            time_taken_seconds=total_sec,
                         )
                         st.session_state.mock_result = res
+                    st.rerun()
+                    return
+
+                with st.form("mock_test_submission_form"):
+                    for idx, q in enumerate(questions):
+                        st.markdown(f"**Question {idx + 1}:**")
+                        st.markdown(q["text"])
+
+                        if mock_pattern in ["JEE Main", "NEET-UG"]:
+                            ans_choice = st.radio(
+                                f"Select Option for Q{idx + 1}:",
+                                ["UNATTEMPTED", "A", "B", "C", "D"],
+                                horizontal=True,
+                                key=f"mock_radio_{idx}",
+                            )
+                            st.session_state.mock_answers[idx] = ans_choice
+                        else:
+                            ans_text = st.text_area(f"Your Answer for Q{idx + 1}:", height=120, key=f"mock_txt_{idx}")
+                            st.session_state.mock_answers[idx] = ans_text
+
+                        st.divider()
+
+                    submit_test = st.form_submit_button("🏁 Submit Mock Test for Grading", type="primary", use_container_width=True)
+
+                    if submit_test:
+                        time_spent = int(time.time() - (st.session_state.mock_start_time or time.time()))
+                        with st.spinner("Grading complete test paper..."):
+                            res = orchestrator.run_mock_exam_evaluation(
+                                user_id=st.session_state.user_id,
+                                exam_pattern=exam.get("exam_pattern", "JEE Main"),
+                                subject=exam.get("subject", "General"),
+                                questions=questions,
+                                student_answers=st.session_state.mock_answers,
+                                time_taken_seconds=time_spent,
+                            )
+                            st.session_state.mock_result = res
                         st.rerun()
+
+            _live_mock_test_fragment()
 
         # Display Result Scorecard
         if st.session_state.mock_result:

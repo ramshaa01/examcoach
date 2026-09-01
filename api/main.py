@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from api.models import QuestionRequest, QuestionResponse, EvaluationRequest, EvaluationResponse, ProfileResponse
 from agents.orchestrator import exam_orchestrator
-from agents.tracker import load_profile
+from agents.tracker import get_user_weaknesses
 
 app = FastAPI(title="ExamCoach API", description="AI Tutor for Indian Exams")
 
@@ -19,5 +19,5 @@ async def evaluate_endpoint(req: EvaluationRequest):
 
 @app.get("/profile", response_model=ProfileResponse)
 async def get_profile_endpoint():
-    profile = load_profile()
-    return ProfileResponse(weaknesses=profile.get("weaknesses", []))
+    weaknesses = get_user_weaknesses(user_id=None)
+    return ProfileResponse(weaknesses=weaknesses)

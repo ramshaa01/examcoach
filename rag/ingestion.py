@@ -12,6 +12,8 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from rank_bm25 import BM25Okapi
 
+from rag.bm25_utils import tokenize
+
 DATA_DIR = "data"
 DB_DIR = "faiss_index"
 BM25_FILE = "faiss_index/bm25.pkl"
@@ -80,7 +82,7 @@ def ingest_documents() -> bool:
     # 2. BM25 Sparse Index & Corpus Store
     corpus_texts = [d.page_content for d in docs]
     corpus_metadata = [d.metadata for d in docs]
-    tokenized_corpus = [doc.lower().split() for doc in corpus_texts]
+    tokenized_corpus = [tokenize(doc) for doc in corpus_texts]
 
     bm25 = BM25Okapi(tokenized_corpus)
 
