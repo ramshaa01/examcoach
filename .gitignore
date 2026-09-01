@@ -24,3 +24,5 @@ Thumbs.db
 
 # Data files (too large for git)
 data/*.pdf
+*.db
+*.pkl

@@ -1,24 +1,35 @@
-import os
-import google.generativeai as genai
+"""Question Generator Agent using the pluggable LLM provider layer."""
+from __future__ import annotations
+
+from typing import Optional
+
+from core.llm_provider import get_llm_provider
 from prompts.agent_prompts import QUESTION_GENERATOR_PROMPT
 
-def generate_question(subject: str, weaknesses: list = None, context: str = "") -> str:
-    """Generates a question using Gemini."""
-    # Configure and instantiate dynamically to pick up session API key
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "DUMMY_KEY"))
-    model = genai.GenerativeModel('gemini-2.5-flash')
-    
+
+def generate_question(
+    subject: str,
+    topic: str = "",
+    weaknesses: Optional[list[str]] = None,
+    difficulty: str = "Moderate (Exam Level)",
+    context: str = "",
+    provider_name: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> str:
+    """Generates a competitive exam question using the active LLM provider."""
+    provider = get_llm_provider(name=provider_name, api_key=api_key)
     weak_str = ", ".join(weaknesses) if weaknesses else "None specific"
+    target_topic = topic.strip() or "Core Syllabus"
+
     prompt = QUESTION_GENERATOR_PROMPT.format(
         subject=subject,
+        topic=target_topic,
         weaknesses=weak_str,
-        context=context
+        difficulty=difficulty,
+        context=context or "No specific notes provided.",
     )
-    
+
     try:
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        key = os.environ.get("GEMINI_API_KEY", "")
-        masked_key = f"{key[:5]}...{key[-5:]}" if len(key) > 10 else "EMPTY/SHORT"
-        return f"Error generating question using key {masked_key}: {str(e)}"
+        return provider.generate(prompt, tier="fast")
+    except Exception as exc:
+        return f"Error generating question: {exc}"

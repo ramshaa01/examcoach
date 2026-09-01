@@ -1,22 +1,27 @@
-import os
-import google.generativeai as genai
+"""Knowledge Agent for synthesizing retrieved RAG document chunks."""
+from __future__ import annotations
+
+from typing import Optional
+
+from core.llm_provider import get_llm_provider
 from prompts.agent_prompts import KNOWLEDGE_AGENT_PROMPT
 
-def summarize_context(chunks: list) -> str:
-    """Synthesizes the retrieved RAG chunks."""
+
+def summarize_context(
+    chunks: list[str],
+    provider_name: Optional[str] = None,
+    api_key: Optional[str] = None,
+) -> str:
+    """Synthesizes raw retrieved text chunks into a cohesive reference note."""
     if not chunks:
         return ""
-    
-    # Configure and instantiate dynamically to pick up session API key
-    genai.configure(api_key=os.environ.get("GEMINI_API_KEY", "DUMMY_KEY"))
-    model = genai.GenerativeModel('gemini-2.5-flash')
-    
-    chunks_text = "\n\n".join(chunks)
+
+    chunks_text = "\n\n---\n\n".join(chunks)
     prompt = KNOWLEDGE_AGENT_PROMPT.format(chunks=chunks_text)
-    
+
     try:
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        print(f"Error in knowledge agent: {e}")
-        return chunks_text # Fallback to raw chunks
+        provider = get_llm_provider(name=provider_name, api_key=api_key)
+        return provider.generate(prompt, tier="fast")
+    except Exception as exc:
+        print(f"Knowledge agent fallback to raw chunks: {exc}")
+        return chunks_text
