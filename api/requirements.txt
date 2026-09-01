@@ -1,0 +1,14 @@
+# Trimmed dependency set for the Vercel serverless deployment of the FastAPI
+# backend only. Deliberately excludes streamlit, faiss-cpu, the langchain
+# family, numpy, rank-bm25, plotly, and reportlab — those are heavy and are
+# only used by the Streamlit frontend / RAG ingestion, which don't run on
+# Vercel. rag/retriever.py imports FAISS/langchain lazily and degrades to "no
+# RAG context" gracefully when they're unavailable, so the API still serves
+# question generation, evaluation, and profile lookups without them.
+fastapi>=0.111.0
+pydantic>=2.7.2
+google-generativeai>=0.7.0
+anthropic>=0.34.0
+openai>=1.40.0
+SQLAlchemy>=2.0.30
+bcrypt>=4.1.2

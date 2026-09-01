@@ -6,9 +6,6 @@ import os
 import pickle
 from typing import List, Tuple
 
-from langchain_community.vectorstores import FAISS
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
-
 from rag.bm25_utils import tokenize
 
 DB_DIR = "faiss_index"
@@ -17,11 +14,19 @@ CORPUS_FILE = "faiss_index/corpus.json"
 
 
 def retrieve_dense_faiss(query: str, k: int = 3) -> List[Tuple[str, str]]:
-    """Fetches top-k from FAISS dense vector store: returns list of (content, source)."""
+    """Fetches top-k from FAISS dense vector store: returns list of (content, source).
+
+    FAISS/langchain are imported lazily so deployments that skip these heavy,
+    optional dependencies (e.g. a size-constrained serverless function that only
+    needs question generation/evaluation, not RAG) still import and run cleanly.
+    """
     if not os.path.exists(os.path.join(DB_DIR, "index.faiss")):
         return []
 
     try:
+        from langchain_community.vectorstores import FAISS
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
+
         embeddings = GoogleGenerativeAIEmbeddings(model="models/gemini-embedding-001")
         vectorstore = FAISS.load_local(DB_DIR, embeddings, allow_dangerous_deserialization=True)
         docs = vectorstore.similarity_search(query, k=k)
